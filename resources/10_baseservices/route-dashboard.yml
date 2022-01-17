@@ -1,0 +1,19 @@
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: kubernetes-dashboard
+  namespace: kube-system
+spec:
+  host: k8s.wimsey.us
+  path: /
+  port:
+    targetPort: 8443
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: reencrypt
+  to:
+    kind: Service
+    name: kubernetes-dashboard
+  wildcardPolicy: None
+

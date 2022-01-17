@@ -1,0 +1,19 @@
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: kubernetes-api
+  namespace: default
+spec:
+  host: k8s-api.wimsey.us
+  path: /
+  port:
+    targetPort: 16443
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: reencrypt
+  to:
+    kind: Service
+    name: kubernetes
+  wildcardPolicy: None
+
