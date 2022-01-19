@@ -1,0 +1,136 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: kuberos
+  name: kuberos
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kuberos-template
+  namespace: kuberos
+  labels:
+    app: kuberos
+data:
+  template: |-
+    apiVersion: v1
+    kind: Config
+    clusters:
+      - cluster:
+          server: https://k8s-api.wimsey.us
+        name: microk8s-cluster
+    contexts:
+      - context:
+          cluster: microk8s-cluster
+          user: admin
+        name: microk8s
+    current-context: microk8s
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: kuberos
+  namespace: kuberos
+  labels:
+    app: kuberos
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 10003
+      targetPort: 10003
+  selector:
+    app: kuberos
+  type: ClusterIP
+
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: kuberos
+  namespace: kuberos
+  labels:
+    app: kuberos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kuberos
+  template:
+    metadata:
+      name: kuberos
+      creationTimestamp: null
+      labels:
+        app: kuberos
+    spec:
+      volumes:
+        - name: kuberos-template
+          configMap:
+            name: kuberos-template
+            defaultMode: 420
+        - name: kuberos-oidc
+          secret:
+            secretName: kuberos-oidc
+            defaultMode: 420
+      containers:
+        - name: kuberos
+          image: negz/kuberos:latest
+          command:
+            - /kuberos
+            - https://accounts.google.com
+            - >-
+              1041391019449-oa5p8pd37qg006a2hiv9pnp05h2ecen5.apps.googleusercontent.com
+            - /oidc/oidc_client_secret
+            - /cfg/template
+            - "--scopes=openid email profile"
+            - "--email-domain=wimsey.us"
+          resources: {}
+          volumeMounts:
+            - name: kuberos-template
+              mountPath: /cfg
+            - name: kuberos-oidc
+              mountPath: /oidc
+
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 5
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: kuberos
+  namespace: kuberos
+spec:
+  host: kuberos.wimsey.us
+  path: /
+  port:
+    targetPort: http
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    kind: Service
+    name: kuberos
+  wildcardPolicy: None
+

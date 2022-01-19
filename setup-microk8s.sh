@@ -16,12 +16,12 @@ if [ ! -f ~/.bash_aliases ]; then
 fi
 
 if [ -z "$INSTALLER_USER" ]; then
-cat << EOFA
+cat << EOF
 
 This script will install MicroK8S and configure it for development with some basic services missing from vanilla MicroK8S.
 
 Press any key to continue, Control-C to abort.
-EOFA
+EOF
 
 # Wait for a key press
 read -n 1
@@ -34,31 +34,42 @@ if [ "$EUID" -ne 0 ]; then
   # We set INSTALLER_USER to our username so that this script can add the user to the microk8s group later
   echo This script must be executed as the super user, using sudo to run as super user ...
   # Use exec to call ourselves via sudo, so sudo assumes this process space and this script ceases to execute
-  exec sudo HOST=$HOST INSTALLER_USER=$USER $0 $@
+  exec sudo INSTALLER_USER=$USER $0 $@
 
   echo SHOULD NEVER GET HERE!
   exit
 fi
 
 # Install MicroK8S using snap (This assumes we're running in Ubuntu 20.04 LTS
+echo Installing microk8s
 snap install microk8s --classic
 
 # If INSTALLER_USER is set, we need to add the specified user to the microk8s group to allow running microk8s command
 # without sudo.  INSTALLER_USER is empty, then don't do anything
 if [ ! -z "$INSTALLER_USER" ]; then
+  echo Adding user to microk8s group if needed
   sudo usermod -a -G microk8s $INSTALLER_USER
   sudo chown -f -R $INSTALLER_USER ~/.kube
 fi
 
- Install NFS common package as we'll need it to mount NFS shares for pods to have storage
- apt-get install -y nfs-common
+# Install NFS common package as we'll need it to mount NFS shares for pods to have storage
+echo Installing NFS client on host for NFS PV support later
+apt-get install -y nfs-common
 
 # Wait for microk8s to get started and become ready
 microk8s status --wait-ready
 
 # Install the rbac, dns and dashboard plugins
+echo Enabling the RBAC authorization mode, CoreDNS for internal DNS services and the Kubernetes Dashboard
 microk8s enable rbac dns dashboard
 
+# Update the kubernetes api server command line arguments to support OIDC, this requires a restart
+echo Injecting OIDC startup arguments for kube-apiserver to allow validation of Google OIDC logins
+echo '--oidc-issuer-url=https://accounts.google.com
+--oidc-client-id=1041391019449-oa5p8pd37qg006a2hiv9pnp05h2ecen5.apps.googleusercontent.com
+--oidc-username-claim=email' >> /var/snap/microk8s/current/args/kube-apiserver
+
+microk8s stop; microk8s start; microk8s status --wait-ready
 
 # Retrieve the admin token
 #AUTH_TOKEN=$(microk8s config | grep token | cut -f2 -d':' | cut -f2 -d' ')
@@ -66,6 +77,7 @@ AUTH_TOKEN=$(oc.exe whoami -t)
 
 # Do we need to create a wrapper script for 'microk8s kubectl' so kubectl-use is happy?
 if [ ! -f "/usr/local/bin/kubectl" ]; then
+  echo Creating kubectl wrapper since it doesn't exist
   # Create wrapper in /usr/local/bin/kubectl
   echo '#!/usr/bin/env bash' > /usr/local/bin/kubectl
   echo 'exec microk8s kubectl $@' >> /usr/local/bin/kubectl
@@ -74,6 +86,7 @@ if [ ! -f "/usr/local/bin/kubectl" ]; then
 fi
 
 # Create initial basic namespaces for installing 3rd party components considered essential
+echo Processing kubernetes objects . . .
 process_resource_directory resources/00_namespaces
 process_resource_directory resources/00_secrets
 
@@ -81,19 +94,29 @@ process_resource_directory resources/00_secrets
 process_resource_directory resources/01_bootstrap
 echo -n "Waiting for nfs storage provider pod to start"
 wait_for_pod kube-storage k8s-app=nfs-client-provisioner 600
-echo -n "Waiting for ingress router pod to start"
-wait_for_pod openshift-ingress k8s-app=ingress-router 600
 
 # Create the dashboard route and then wait the dashboard and route to become available
 process_resource_directory resources/10_baseservices
+
+echo Patching routes with TLS certificates . . .
+kubectl patch route -n kube-system kubernetes-dashboard --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
+kubectl patch route -n default kubernetes-api --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
+kubectl patch route -n kube-oidc k8s-oidc-dash-proxy --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
+kubectl patch route -n kuberos kuberos --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
+kubectl patch route -n vault vault --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
+
+resources/10_baseservices/k8s-oidc-dash-proxy.yml
 echo -n "Waiting for dashboard pod to start"
 wait_for_pod kube-system k8s-app=kubernetes-dashboard 600
 
 echo -n "Waiting for base routes to become available: "
 echo -n " API"
 while [[ $(microk8s kubectl get route -n default kubernetes-api -o 'jsonpath={..status.ingress[*].conditions[?(@.type=="Admitted")].status}') != "True" ]]; do echo -n . && sleep 1; done
-echo -n " Dashboard"
+echo -n " Dashboard-Token"
 while [[ $(microk8s kubectl get route -n kube-system kubernetes-dashboard -o 'jsonpath={..status.ingress[*].conditions[?(@.type=="Admitted")].status}') != "True" ]]; do echo -n . && sleep 1; done
+echo
+echo -n " Dashboard-OIDC"
+while [[ $(microk8s kubectl get route -n kube-oidc k8s-oidc-dash-proxy -o 'jsonpath={..status.ingress[*].conditions[?(@.type=="Admitted")].status}') != "True" ]]; do echo -n . && sleep 1; done
 echo
 
 process_resource_directory resources/50_general
@@ -103,6 +126,8 @@ wait_for_pod vault k8s-app=vault 600
 echo -n "Waiting for murmur server to start"
 wait_for_pod murmur app=murmur 600
 
+echo Configuring vault authentication and kubernetes integration by logging into vault and running:
+echo scripts/config-vault.sh
 
 # Notify the user we're done and provide some basic instructions
 cat << EOF
@@ -111,15 +136,16 @@ cat << EOF
 Done!
 ===============================================================================
 
-
 If this is the first time executing this script, you may need to logout and log back in again for all groups and
 aliases to take effect.
+
 
 ===============================================================================
 Web Dashboard
 ===============================================================================
 
-To login to the dashboard visit https://$HOST in your browser and login using the following administrator token:
+To login to the dashboard visit https://k8s.wimsey.us in your browser and login using your @wimsey.us Google accounts
+or use the root token to login at https://k8s-token.wimsey.us in your browser and login using the following administrator token:
 
 $AUTH_TOKEN
 
@@ -144,6 +170,14 @@ kubectl config set-cluster microk8s-cluster --server=https:///k8s-api.wimsey.us
 
 You may now run commands such as:
 kubectl get pods --all-namespaces
+
+
+Baseline services:
+https://vault.wimsey.us - Hashicorp vault, Google for authentication, kubernetes integration enabled, all service accounts have basic login access and services by default
+https://k8s.wimsey.us - Kubernetes dashboard using OIDC Auth via Google @wimsey.us accounts
+https://k8s-token.wimsey.us - Direct route to kubernetes dashboard using token auth
+https://kuberos.wimsey.us - OIDC Keys for Kubernetes authentication in kubectl
+Murmur - Real time audio conferencing
 
 Enjoy!
 

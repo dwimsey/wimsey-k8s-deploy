@@ -16,7 +16,7 @@ process_resource_directory() {
   shift
 
   echo Scanning $rpath ...
-  readarray -d '' entries < <(printf '%s\0' $rpath/* | sort -zV)
+  readarray -d '' entries < <(printf '%s\0' $rpath/*.yaml $rpath/*.yml | sort -zV)
   for entry in "${entries[@]}"; do
     if [ -d $entry ]; then
       process_resource_directory $entry

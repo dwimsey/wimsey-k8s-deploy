@@ -5,7 +5,7 @@ metadata:
   name: kubernetes-dashboard
   namespace: kube-system
 spec:
-  host: k8s.wimsey.us
+  host: k8s-token.wimsey.us
   path: /
   port:
     targetPort: 8443
