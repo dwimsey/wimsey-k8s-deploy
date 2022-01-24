@@ -1,0 +1,17 @@
+name: Test Workflow
+on:
+  push:
+    branches:
+      - main
+      - master
+      - release
+  pull_request:
+    types: [opened, synchronized]
+
+jobs:
+  build:
+    name: Step 1
+    runs-on: [self-hosted]
+    steps:
+      - run: ls -al .
+      - run: pwd
