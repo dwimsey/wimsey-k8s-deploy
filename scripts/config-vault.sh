@@ -8,8 +8,8 @@
 
 vault auth enable kubernetes
 vault write auth/kubernetes/config kubernetes_host="https://kubernetes.default.svc"
-vault write auth/kubernetes/role/default policies="default" bound_service_account_names="*" bound_service_account_namespaces="*" ttl=24h
-#export KUBE_TOKEN=$(oc exec -n mysql-test svc/mysql-test -- cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+vault write auth/kubernetes/role/serviceaccount policies="default" bound_service_account_names="*" bound_service_account_namespaces="*" ttl=30m
+#export KUBE_TOKEN=$(oc exec -n murmur svc/murmur -- cat /var/run/secrets/kubernetes.io/serviceaccount/token)
 #curl -k --request POST --data '{"jwt": "'${KUBE_TOKEN}'", "role": "default"}' https://vault.wimsey.us/v1/auth/kubernetes/login
 
 OIDC_CLIENT_ID=$(oc get -n k8s-deploy secret vault-oidc -o=jsonpath='{.data.oidc_client_id}' | base64 --decode)
