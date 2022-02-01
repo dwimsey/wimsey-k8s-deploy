@@ -69,13 +69,31 @@ echo '--oidc-issuer-url=https://accounts.google.com
 --oidc-client-id=1041391019449-oa5p8pd37qg006a2hiv9pnp05h2ecen5.apps.googleusercontent.com
 --oidc-username-claim=email' >> /var/snap/microk8s/current/args/kube-apiserver
 
-microk8s stop; microk8s start; microk8s status --wait-ready
+microk8s stop; microk8s start &
+
+# While waiting for microk8s to restart, download the OpenShift client cause we like it
+if [ ! -f "/usr/local/bin/oc" ]; then
+mkdir t
+cd t
+## Arm64
+#wget https://mirror.openshift.com/pub/openshift-v4/aarch64/clients/ocp-dev-preview/latest/openshift-client-linux.tar.gz
+#tar zxf ./openshift-client-linux.tar.gz
+# Amd64
+wget https://mirror.openshift.com/pub/openshift-v4/aarch64/clients/ocp-dev-preview/latest/openshift-client-linux-amd64.tar.gz
+tar zxf ./openshift-client-linux-amd64.tar.gz
+mv oc /usr/local/bin/oc
+cd ..
+rm -rf t
+fi
+
+# Wait for microk8s to fully restart
+microk8s status --wait-ready
 
 # Retrieve the admin token
 #AUTH_TOKEN=$(microk8s config | grep token | cut -f2 -d':' | cut -f2 -d' ')
 AUTH_TOKEN=$(oc.exe whoami -t)
 
-# Do we need to create a wrapper script for 'microk8s kubectl' so kubectl-use is happy?
+# Do we need to create a wrapper script for 'microk8s kubectl' so kubectl-use is happy? This should generally already have been handled by the installation of the `oc` command above
 if [ ! -f "/usr/local/bin/kubectl" ]; then
   echo Creating kubectl wrapper since it doesn't exist
   # Create wrapper in /usr/local/bin/kubectl
