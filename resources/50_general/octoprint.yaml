@@ -1,0 +1,49 @@
+---
+kind: "Service"
+apiVersion: "v1"
+metadata:
+  name: octoprint
+  namespace: dwimsey
+spec:
+  ports:
+    -
+      name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+  selector: {} 
+
+---
+kind: "Endpoints"
+apiVersion: "v1"
+metadata:
+  name: octoprint
+  namespace: dwimsey
+subsets: 
+  -
+    addresses:
+      -
+        ip: 192.168.1.136
+    ports:
+      -
+        port: 80 
+        name: http
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: octoprint
+  namespace: dwimsey
+spec:
+  host: octoprint.wimsey.us
+  path: /
+  port:
+    targetPort: 80
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    kind: Service
+    name: octoprint
+  wildcardPolicy: None
+ou

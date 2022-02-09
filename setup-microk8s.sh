@@ -122,6 +122,7 @@ kubectl patch route -n default kubernetes-api --patch-file=resources/50_secrets/
 kubectl patch route -n kube-oidc k8s-oidc-dash-proxy --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
 kubectl patch route -n kuberos kuberos --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
 kubectl patch route -n vault vault --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
+kubectl patch route -n dwimsey octoprint --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
 
 resources/10_baseservices/k8s-oidc-dash-proxy.yml
 echo -n "Waiting for dashboard pod to start"
