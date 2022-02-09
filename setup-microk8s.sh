@@ -122,7 +122,6 @@ kubectl patch route -n default kubernetes-api --patch-file=resources/50_secrets/
 kubectl patch route -n kube-oidc k8s-oidc-dash-proxy --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
 kubectl patch route -n kuberos kuberos --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
 kubectl patch route -n vault vault --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
-kubectl patch route -n dwimsey octoprint --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
 
 resources/10_baseservices/k8s-oidc-dash-proxy.yml
 echo -n "Waiting for dashboard pod to start"
@@ -144,6 +143,8 @@ wait_for_pod vault k8s-app=vault 600
 
 echo -n "Waiting for murmur server to start"
 wait_for_pod murmur app=murmur 600
+
+kubectl patch route -n dwimsey octoprint --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
 
 echo Configuring vault authentication and kubernetes integration by logging into vault and running:
 echo scripts/config-vault.sh
