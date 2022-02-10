@@ -1,0 +1,63 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wimsey-k8s-deploy
+  namespace: github
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: actions-runner
+  template:
+    metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject-secret-testdw.json: 'doesnt matter'
+        vault.hashicorp.com/agent-inject-template-testdw.json: '{{- with secret "secrets/blah" -}}mongo://{{ .Data.data.asdf }}{{- end -}}'
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/role: 'serviceaccount'
+      labels:
+        app: actions-runner
+    spec:
+      volumes:
+#        - name: dockersock
+#          hostPath:
+#            path: /var/run/docker.sock
+        - name: workdir
+          emptydir: {}
+      containers:
+        - name: runner
+          image: myoung34/github-runner:latest
+          env:
+            - name: ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: github-runner-token
+                  key: access_token
+            - name: RUNNER_SCOPE
+              value: "repo"
+            - name: LABELS
+              value: home
+            - name: REPO_URL
+              value: https://github.com/dwimsey/wimsey-k8s-deploy
+#            - name: ORG_NAME
+#              value: dwimsey
+#            - name: RUNNER_TOKEN
+#              value:
+##            - name: RUNNER_NAME_PREFIX
+##              value: gk
+#            - name: RUNNER_GROUP
+#              value: my-group
+            - name: RUNNER_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: RUNNER_WORKDIR
+              value: /tmp/gitrepo
+            - name: EPHEMERAL
+              value: 'true'
+          volumeMounts:
+#            - name: dockersock
+#              mountPath: /var/run/docker.sock
+            - name: workdir
+              mountPath: /tmp/gitrepo
