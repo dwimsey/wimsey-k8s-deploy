@@ -40,10 +40,8 @@ metadata:
   name: default
 spec:
   oidc:
-    issuerUri: http://localhost/something
-    clientId: http://localhost/something
-    clientSecret: http://localhost/something
-    caCertUri: http://localhost/something
+    issuerUri: https://accounts.google.com
+    clientId: 1041391019449-oa5p8pd37qg006a2hiv9pnp05h2ecen5.apps.googleusercontent.com
 
 ##oc edit clusterrole system:discovery
 ##---
