@@ -124,7 +124,6 @@ kubectl patch route -n kuberos kuberos --patch-file=resources/00_secrets/wimsey_
 kubectl patch route -n vault vault --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
 kubectl patch route -n shackspace webroot --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
 
-resources/10_baseservices/k8s-oidc-dash-proxy.yml
 echo -n "Waiting for dashboard pod to start"
 wait_for_pod kube-system k8s-app=kubernetes-dashboard 600
 
