@@ -117,11 +117,12 @@ wait_for_pod kube-storage k8s-app=nfs-client-provisioner 600
 process_resource_directory resources/10_baseservices
 
 echo Patching routes with TLS certificates . . .
-kubectl patch route -n kube-system kubernetes-dashboard --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
-kubectl patch route -n default kubernetes-api --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
-kubectl patch route -n kube-oidc k8s-oidc-dash-proxy --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
-kubectl patch route -n kuberos kuberos --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
-kubectl patch route -n vault vault --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
+kubectl patch route -n kube-system kubernetes-dashboard --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
+kubectl patch route -n default kubernetes-api --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
+kubectl patch route -n kube-oidc k8s-oidc-dash-proxy --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
+kubectl patch route -n kuberos kuberos --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
+kubectl patch route -n vault vault --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
+
 
 resources/10_baseservices/k8s-oidc-dash-proxy.yml
 echo -n "Waiting for dashboard pod to start"
