@@ -1,0 +1,120 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webroot
+  namespace: shackspace
+  labels:
+    k8s-app: webroot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: webroot
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        k8s-app: webroot
+    spec:
+      containers:
+        - name: website-app
+          image: shackspacehosting/webroot:0.0.2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+#          livenessProbe:
+#            httpGet:
+#              path: /info
+#              port: 80
+#              host: localhost
+#              scheme: HTTP
+#            initialDelaySeconds: 10
+#            timeoutSeconds: 1
+#            periodSeconds: 10
+#            successThreshold: 1
+#            failureThreshold: 3
+#          readinessProbe:
+#            httpGet:
+#              path: /info
+#              port: 80
+#              host: localhost
+#              scheme: HTTP
+#            initialDelaySeconds: 10
+#            timeoutSeconds: 1
+#            periodSeconds: 10
+#            successThreshold: 1
+#            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      securityContext: {}
+      schedulerName: default-scheduler
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+
+
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: webroot
+  namespace: shackspace
+  labels:
+    k8s-app: webroot
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  selector:
+    k8s-app: webroot
+  type: ClusterIP
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: webroot
+  namespace: shackspace
+spec:
+  host: www.shackspacehosting.com
+  path: /
+  port:
+    targetPort: http
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    kind: Service
+    name: webroot
+  wildcardPolicy: None
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: webroot-wimsey
+  namespace: shackspace
+spec:
+  host: shackspace.wimsey.us
+  path: /
+  port:
+    targetPort: http
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    kind: Service
+    name: webroot
+  wildcardPolicy: None
