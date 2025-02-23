@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kuberos-oidc
+  namespace: kuberos
+  labels:
+    app.kubernetes.io/name: kuberos
+    app.kubernetes.io/instance: master
+stringData:
+  oidc_client_id: "From a client created here - https://console.cloud.google.com/auth/clients"
+  oidc_client_secret: "From a client created here - https://console.cloud.google.com/auth/clients"

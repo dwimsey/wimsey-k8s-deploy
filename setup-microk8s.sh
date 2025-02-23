@@ -159,6 +159,9 @@ wait_for_pod vault k8s-app=vault 600
 echo Configuring vault authentication and kubernetes integration by logging into vault and running:
 echo scripts/config-vault.sh
 
+echo Adding admin rolebinding (dwimsey-admin) for david@wimsey.us as cluster-admin role
+microk8s kubectl create clusterrolebinding dwimsey-admin --clusterrole=cluster-admin --user=david@wimsey.us
+
 # Notify the user we're done and provide some basic instructions
 cat << EOF
 
