@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vault-oidc
+  namespace: vault
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/instance: master
+stringData:
+  oidc_client_id: "From a client created here - https://console.cloud.google.com/auth/clients"
+  oidc_client_secret: "From a client created here - https://console.cloud.google.com/auth/clients"
+  oidc_discovery_url: "https://accounts.google.com"

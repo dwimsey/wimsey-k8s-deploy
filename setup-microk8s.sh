@@ -1,19 +1,8 @@
 #!/usr/bin/env bash
-
-source ./scripts/lib/common.sh
-
 # Trap errors and call abort function if they occur
 trap 'abort' 0
 # Set to terminate script immediately if any command returns non-zero, the initial microk8s commands may return an error even when successful so we wait til now to enable it
 set -e
-
-
-
-if [ ! -f ~/.bash_aliases ]; then
-  # Copy aliases to make life easier in the future, this provides the `kubectl` and `oc` aliases via the microk8s command
-  cp ./bin/bash_aliases ~/.bash_aliases
-  source ~/.bash_aliases
-fi
 
 if [ -z "$INSTALLER_USER" ]; then
 cat << EOF
@@ -34,11 +23,20 @@ if [ "$EUID" -ne 0 ]; then
   # We set INSTALLER_USER to our username so that this script can add the user to the microk8s group later
   echo This script must be executed as the super user, using sudo to run as super user ...
   # Use exec to call ourselves via sudo, so sudo assumes this process space and this script ceases to execute
-  exec sudo INSTALLER_USER=$USER $0 $@
+  exec sudo INSTALLER_USER=$USER bash $0 $@
 
   echo SHOULD NEVER GET HERE!
   exit
 fi
+
+RELATIVE_SCRIPT_DIR=$( dirname -- "$( readlink -f -- "$0"; )"; )
+SCRIPT_DIR=$(realpath ${RELATIVE_SCRIPT_DIR})
+USER_HOME=$(sudo -u "$INSTALLER_USER" sh -c 'echo $HOME')
+
+echo "Script execution directory: ${RELATIVE_SCRIPT_DIR}"
+cd "${SCRIPT_DIR}"
+
+source ./scripts/lib/common.sh
 
 # Install MicroK8S using snap (This assumes we're running in Ubuntu 20.04 LTS
 echo Installing microk8s
@@ -48,8 +46,10 @@ snap install microk8s --classic
 # without sudo.  INSTALLER_USER is empty, then don't do anything
 if [ ! -z "$INSTALLER_USER" ]; then
   echo Adding user to microk8s group if needed
+  mkdir -p ${USER_HOME}/.kube
   sudo usermod -a -G microk8s $INSTALLER_USER
-  sudo chown -f -R $INSTALLER_USER ~/.kube
+  sudo microk8s config > "${USER_HOME}/.kube/config"
+  sudo chown -f -R $INSTALLER_USER ${USER_HOME}/.kube
 fi
 
 # Install NFS common package as we'll need it to mount NFS shares for pods to have storage
@@ -57,11 +57,13 @@ echo Installing NFS client on host for NFS PV support later
 apt-get install -y nfs-common
 
 # Wait for microk8s to get started and become ready
-microk8s status --wait-ready
+microk8s status --wait-ready > /dev/null && echo MicroK8s is started.
 
 # Install the rbac, dns and dashboard plugins
 echo Enabling the RBAC authorization mode, CoreDNS for internal DNS services and the Kubernetes Dashboard
-microk8s enable rbac dns dashboard
+microk8s enable rbac
+microk8s enable dns
+microk8s enable dashboard
 
 # Update the kubernetes api server command line arguments to support OIDC, this requires a restart
 echo Injecting OIDC startup arguments for kube-apiserver to allow validation of Google OIDC logins
@@ -69,33 +71,42 @@ echo '--oidc-issuer-url=https://accounts.google.com
 --oidc-client-id=1041391019449-oa5p8pd37qg006a2hiv9pnp05h2ecen5.apps.googleusercontent.com
 --oidc-username-claim=email' >> /var/snap/microk8s/current/args/kube-apiserver
 
+echo Restarting Microk8s for OIDC update
 microk8s stop; microk8s start &
 
 # While waiting for microk8s to restart, download the OpenShift client cause we like it
 if [ ! -f "/usr/local/bin/oc" ]; then
-mkdir t
-cd t
-## Arm64
-#wget https://mirror.openshift.com/pub/openshift-v4/aarch64/clients/ocp-dev-preview/latest/openshift-client-linux.tar.gz
-#tar zxf ./openshift-client-linux.tar.gz
-# Amd64
-wget https://mirror.openshift.com/pub/openshift-v4/aarch64/clients/ocp-dev-preview/latest/openshift-client-linux-amd64.tar.gz
-tar zxf ./openshift-client-linux-amd64.tar.gz
-mv oc /usr/local/bin/oc
-cd ..
-rm -rf t
+  mkdir dl_tmp
+  cd dl_tmp
+
+    ## Arm64
+    #wget https://mirror.openshift.com/pub/openshift-v4/aarch64/clients/ocp-dev-preview/latest/openshift-client-linux.tar.gz
+    #tar zxf ./openshift-client-linux.tar.gz
+
+    # Amd64
+    wget https://mirror.openshift.com/pub/openshift-v4/aarch64/clients/ocp-dev-preview/latest/openshift-client-linux-amd64.tar.gz
+    tar zxf ./openshift-client-linux-amd64.tar.gz
+    mv oc /usr/local/bin/oc
+
+  cd ..
+  rm -rf dl_tmp
+else
+  echo Sleeping 5 seconds to allow microk8s to get started ...
+  sleep 5
 fi
 
 # Wait for microk8s to fully restart
-microk8s status --wait-ready
+microk8s status --wait-ready > /dev/null && echo MicroK8s is ready
 
+echo Setting .kube/config
 # Retrieve the admin token
 #AUTH_TOKEN=$(microk8s config | grep token | cut -f2 -d':' | cut -f2 -d' ')
-AUTH_TOKEN=$(oc.exe whoami -t)
+#AUTH_TOKEN=$(oc whoami -t)
+AUTH_TOKEN="No longer available in this form"
 
 # Do we need to create a wrapper script for 'microk8s kubectl' so kubectl-use is happy? This should generally already have been handled by the installation of the `oc` command above
 if [ ! -f "/usr/local/bin/kubectl" ]; then
-  echo Creating kubectl wrapper since it doesn't exist
+  echo Creating kubectl wrapper since it doesn\'t exist
   # Create wrapper in /usr/local/bin/kubectl
   echo '#!/usr/bin/env bash' > /usr/local/bin/kubectl
   echo 'exec microk8s kubectl $@' >> /usr/local/bin/kubectl
@@ -106,23 +117,15 @@ fi
 # Create initial basic namespaces for installing 3rd party components considered essential
 echo Processing kubernetes objects . . .
 process_resource_directory resources/00_namespaces
-process_resource_directory resources/00_secrets
+process_resource_directory resources/01_secrets
 
 # Create critical services: ingress router, storage, ect and wait for them to start
-process_resource_directory resources/01_bootstrap
+process_resource_directory resources/02_bootstrap
 echo -n "Waiting for nfs storage provider pod to start"
 wait_for_pod kube-storage k8s-app=nfs-client-provisioner 600
 
 # Create the dashboard route and then wait the dashboard and route to become available
 process_resource_directory resources/10_baseservices
-
-echo Patching routes with TLS certificates . . .
-kubectl patch route -n kube-system kubernetes-dashboard --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
-kubectl patch route -n default kubernetes-api --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
-kubectl patch route -n kube-oidc k8s-oidc-dash-proxy --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
-kubectl patch route -n kuberos kuberos --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
-kubectl patch route -n vault vault --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
-kubectl patch route -n shackspace webroot --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
 
 echo -n "Waiting for dashboard pod to start"
 wait_for_pod kube-system k8s-app=kubernetes-dashboard 600
@@ -138,13 +141,20 @@ while [[ $(microk8s kubectl get route -n kube-oidc k8s-oidc-dash-proxy -o 'jsonp
 echo
 
 process_resource_directory resources/50_general
+echo "=== You may need to copy vault data files if the PVC has changed for vault after deployment ==="
 echo -n "Waiting for authentication system (vault pod) to start"
 wait_for_pod vault k8s-app=vault 600
 
-echo -n "Waiting for murmur server to start"
-wait_for_pod murmur app=murmur 600
+#echo Patching routes with TLS certificates . . .
+#kubectl patch route -n kube-system kubernetes-dashboard --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
+#kubectl patch route -n default kubernetes-api --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
+#kubectl patch route -n kube-oidc k8s-oidc-dash-proxy --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
+#kubectl patch route -n kuberos kuberos --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
+#kubectl patch route -n vault vault --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
 
-kubectl patch route -n dwimsey octoprint --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
+
+#kubectl patch route -n shackspace webroot --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
+#kubectl patch route -n dwimsey octoprint --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
 
 echo Configuring vault authentication and kubernetes integration by logging into vault and running:
 echo scripts/config-vault.sh
@@ -161,13 +171,22 @@ aliases to take effect.
 
 
 ===============================================================================
+Required external configuration:
+===============================================================================
+DNS:
+  storage.k8s.wimsey.us should point to the appropriate nfs server with /mnt/pool0/k8s exported for the NFS provisioner
+  k8s.wimsey.us should point to the ingress IP for the cluster router - eventually this should be handled by keepalived
+
+===============================================================================
 Web Dashboard
 ===============================================================================
 
 To login to the dashboard visit https://k8s.wimsey.us in your browser and login using your @wimsey.us Google accounts
 or use the root token to login at https://k8s-token.wimsey.us in your browser and login using the following administrator token:
 
-$AUTH_TOKEN
+kubectl describe secret -n kube-system microk8s-dashboard-token
+https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md
+
 
 ===============================================================================
 Remote oc

@@ -1,0 +1,30 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vault-gsuite-json
+  namespace: vault
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/instance: master
+stringData:
+  gsuite-config.json: |-
+    {
+      "example_hint": "Replace this with json downloaded after creating an access key from 'hint_url' location",
+      "hint_url": "https://console.cloud.google.com/iam-admin/serviceaccounts/details/106485397074198570316/keys?project=shackspace-181602"
+      "type": "service_account",
+      "project_id": "redacted",
+      "private_key_id": "redacted",
+      "private_key": "redacted",
+      "client_email": "redacted",
+      "client_id": "redacted",
+      "auth_uri": "redacted",
+      "token_uri": "redacted",
+      "auth_provider_x509_cert_url": "redacted",
+      "client_x509_cert_url": "redacted",
+      "universe_domain": "redacted"
+    }
+
+  gsuite-oidc.json: |-
+    Replace this text with json data downloaded from the download link on this page
+    - https://console.cloud.google.com/auth/clients/1041391019449-kn1fhgro89l5lbmpdcirgoi2tdt9bmis.apps.googleusercontent.com?project=shackspace-181602

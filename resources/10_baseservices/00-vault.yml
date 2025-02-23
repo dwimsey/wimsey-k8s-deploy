@@ -69,8 +69,6 @@ metadata:
   labels:
     app.kubernetes.io/name: vault
     app.kubernetes.io/instance: master
-  annotations:
-
 spec:
   clusterIP: None
   publishNotReadyAddresses: true
@@ -96,8 +94,6 @@ metadata:
   labels:
     app.kubernetes.io/name: vault
     app.kubernetes.io/instance: master
-  annotations:
-
 spec:
   # We want the servers to become available even if they're not ready
   # since this DNS is also used for join operations.
@@ -143,7 +139,6 @@ spec:
         component: server
         k8s-app: vault
     spec:
-
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -153,8 +148,6 @@ spec:
                   app.kubernetes.io/instance: "master"
                   component: server
               topologyKey: kubernetes.io/hostname
-
-
 
       terminationGracePeriodSeconds: 10
       serviceAccountName: vault
@@ -249,14 +242,11 @@ spec:
 
 
           volumeMounts:
-
-
-
             - name: data
               mountPath: /vault/data
 
-            - mountPath: /vault/gsuite-config
-              name: gsuite-config
+            - name: gsuite-config
+              mountPath: /vault/gsuite-config
 
             - name: config
               mountPath: /vault/config

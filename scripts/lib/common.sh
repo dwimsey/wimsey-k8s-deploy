@@ -16,15 +16,12 @@ process_resource_directory() {
   shift
 
   echo Scanning $rpath ...
-  readarray -d '' entries < <(printf '%s\0' $rpath/*.yaml $rpath/*.yml | sort -zV)
+  readarray -d '' entries < <(find $rpath -type f -printf '%p\0' | sort -zV)
   for entry in "${entries[@]}"; do
-    if [ -d $entry ]; then
-      process_resource_directory $entry
-    else
-      echo Applying $entry.
-      microk8s kubectl apply -f $entry > /dev/null
-    fi
+    echo Applying $entry.
+    microk8s kubectl apply -f $entry > /dev/null
   done
+
 }
 
 wait_for_pod() {
