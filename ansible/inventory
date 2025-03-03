@@ -1,0 +1,20 @@
+control_plane:
+  hosts:
+    k8s-cp-00
+
+common_worker_nodes:
+  hosts:
+    k8s-app-01:
+    k8s-app-02:
+    k8s-app-03:
+
+gpu_worker_nodes:
+  hosts:
+    k8s-gpu-app-01:
+    k8s-gpu-app-02:
+    k8s-gpu-app-03:
+
+workers:
+  children:
+    common_worker_nodes:
+    gpu_worker_nodes:
