@@ -3,6 +3,6 @@
 set -e
 
 #/mnt/software/GPU/nvidia/latest-x86_64-driver.run -m=kernel-open
-/mnt/software/GPU/nvidia/latest-x86_64-cuda.run
+/mnt/software/GPU/nvidia/latest-x86_64-cuda.run --silent -m=kernel-open --no-drm
 
 nvidia-smi
