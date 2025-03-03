@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cert-manager-dns01-aws-key
+  namespace: cert-manager
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/instance: master
+  annotations:
+    aws-iam-user: certbot-shackspace
+stringData:
+  AWS_ACCESS_KEY_ID: 'Get access key from here - https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/users/details/vault-kms?section=security_credentials'
+  AWS_SECRET_ACCESS_KEY: 'Get access key from here - https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/users/details/vault-kms?section=security_credentials'

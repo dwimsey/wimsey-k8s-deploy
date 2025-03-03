@@ -64,6 +64,9 @@ echo Enabling the RBAC authorization mode, CoreDNS for internal DNS services and
 microk8s enable rbac
 microk8s enable dns
 microk8s enable dashboard
+microk8s enable cert-manager
+microk8s disable ingress
+microk8s disable hostpath-storage
 
 # Update the kubernetes api server command line arguments to support OIDC, this requires a restart
 echo Injecting OIDC startup arguments for kube-apiserver to allow validation of Google OIDC logins
