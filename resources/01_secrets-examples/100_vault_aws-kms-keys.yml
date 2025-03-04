@@ -7,6 +7,8 @@ metadata:
   labels:
     app.kubernetes.io/name: vault
     app.kubernetes.io/instance: master
+  annotations:
+    aws-iam-user: vault-wimsey
 stringData:
   AWS_ACCESS_KEY_ID: 'Get access key from here - https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/users/details/vault-kms?section=security_credentials'
   AWS_SECRET_ACCESS_KEY: 'Get access key from here - https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/users/details/vault-kms?section=security_credentials'
