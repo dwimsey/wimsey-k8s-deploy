@@ -1,0 +1,22 @@
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: k8s-registry
+  namespace: container-registry
+  annotations:
+    cert-manager.io/issuer-kind: ClusterIssuer
+    cert-manager.io/issuer-name: letsencrypt
+spec:
+  host: k8s-registry.wimsey.us
+  path: /
+  port:
+    targetPort: 5000
+  tls:
+    #insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    kind: Service
+    name: registry
+  wildcardPolicy: None
+

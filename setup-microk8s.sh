@@ -66,7 +66,6 @@ microk8s enable dns
 microk8s enable dashboard
 microk8s enable cert-manager
 microk8s disable ingress
-microk8s disable hostpath-storage
 
 # Update the kubernetes api server command line arguments to support OIDC, this requires a restart
 echo Injecting OIDC startup arguments for kube-apiserver to allow validation of Google OIDC logins
@@ -127,6 +126,9 @@ process_resource_directory resources/02_bootstrap
 echo -n "Waiting for nfs storage provider pod to start"
 wait_for_pod kube-storage k8s-app=nfs-client-provisioner 600
 
+microk8s enable registry
+microk8s disable ingress
+microk8s disable hostpath-storage
 
 # Install cert-manager operator for OpenShift routes
 helm install openshift-routes -n cert-manager oci://ghcr.io/cert-manager/charts/openshift-routes
