@@ -143,21 +143,17 @@ echo -n " Dashboard-OIDC"
 while [[ $(microk8s kubectl get route -n kube-oidc k8s-oidc-dash-proxy -o 'jsonpath={..status.ingress[*].conditions[?(@.type=="Admitted")].status}') != "True" ]]; do echo -n . && sleep 1; done
 echo
 
+# Install cert-manager operator for OpenShift routes
+helm install openshift-routes -n cert-manager oci://ghcr.io/cert-manager/charts/openshift-routes
+# Use the following annotations on routes to automagically secure them with cert-manager
+#  annotations:
+#    cert-manager.io/issuer-kind: ClusterIssuer
+#    cert-manager.io/issuer-name: letsencrypt
+
 process_resource_directory resources/50_general
 echo "=== You may need to copy vault data files if the PVC has changed for vault after deployment ==="
 echo -n "Waiting for authentication system (vault pod) to start"
 wait_for_pod vault k8s-app=vault 600
-
-#echo Patching routes with TLS certificates . . .
-#kubectl patch route -n kube-system kubernetes-dashboard --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
-#kubectl patch route -n default kubernetes-api --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
-#kubectl patch route -n kube-oidc k8s-oidc-dash-proxy --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
-#kubectl patch route -n kuberos kuberos --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
-#kubectl patch route -n vault vault --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
-
-
-#kubectl patch route -n shackspace webroot --patch-file=resources/00_secrets/wimsey_route.json.patch --type merge
-#kubectl patch route -n dwimsey octoprint --patch-file=resources/50_secrets/wimsey_route.patch.json --type merge
 
 echo Configuring vault authentication and kubernetes integration by logging into vault and running:
 echo scripts/config-vault.sh

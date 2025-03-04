@@ -4,6 +4,9 @@ kind: Route
 metadata:
   name: kubernetes-dashboard
   namespace: kube-system
+  annotations:
+    cert-manager.io/issuer-kind: ClusterIssuer
+    cert-manager.io/issuer-name: letsencrypt
 spec:
   host: k8s-token.wimsey.us
   path: /

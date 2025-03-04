@@ -93,6 +93,9 @@ kind: Route
 metadata:
   name: k8s-oidc-dash-proxy
   namespace: kube-oidc
+  annotations:
+    cert-manager.io/issuer-kind: ClusterIssuer
+    cert-manager.io/issuer-name: letsencrypt
 spec:
   host: k8s.wimsey.us
   path: /

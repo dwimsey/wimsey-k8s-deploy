@@ -87,6 +87,9 @@ kind: Route
 metadata:
   name: webroot
   namespace: shackspace
+  annotations:
+    cert-manager.io/issuer-kind: ClusterIssuer
+    cert-manager.io/issuer-name: letsencrypt
 spec:
   host: www.shackspacehosting.com
   path: /

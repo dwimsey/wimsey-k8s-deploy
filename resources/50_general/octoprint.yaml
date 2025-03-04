@@ -34,6 +34,9 @@ kind: Route
 metadata:
   name: octoprint
   namespace: dwimsey
+  annotations:
+    cert-manager.io/issuer-kind: ClusterIssuer
+    cert-manager.io/issuer-name: letsencrypt
 spec:
   host: octoprint.wimsey.us
   path: /

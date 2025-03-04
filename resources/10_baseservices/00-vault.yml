@@ -346,6 +346,9 @@ kind: Route
 metadata:
   name: vault
   namespace: vault
+  annotations:
+    cert-manager.io/issuer-kind: ClusterIssuer
+    cert-manager.io/issuer-name: letsencrypt
 spec:
   host: vault.wimsey.us
   path: /
