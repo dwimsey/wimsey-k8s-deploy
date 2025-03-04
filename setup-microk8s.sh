@@ -127,6 +127,14 @@ process_resource_directory resources/02_bootstrap
 echo -n "Waiting for nfs storage provider pod to start"
 wait_for_pod kube-storage k8s-app=nfs-client-provisioner 600
 
+
+# Install cert-manager operator for OpenShift routes
+helm install openshift-routes -n cert-manager oci://ghcr.io/cert-manager/charts/openshift-routes
+# Use the following annotations on routes to automagically secure them with cert-manager
+#  annotations:
+#    cert-manager.io/issuer-kind: ClusterIssuer
+#    cert-manager.io/issuer-name: letsencrypt
+
 # Create the dashboard route and then wait the dashboard and route to become available
 process_resource_directory resources/10_baseservices
 
@@ -142,13 +150,6 @@ echo
 echo -n " Dashboard-OIDC"
 while [[ $(microk8s kubectl get route -n kube-oidc k8s-oidc-dash-proxy -o 'jsonpath={..status.ingress[*].conditions[?(@.type=="Admitted")].status}') != "True" ]]; do echo -n . && sleep 1; done
 echo
-
-# Install cert-manager operator for OpenShift routes
-helm install openshift-routes -n cert-manager oci://ghcr.io/cert-manager/charts/openshift-routes
-# Use the following annotations on routes to automagically secure them with cert-manager
-#  annotations:
-#    cert-manager.io/issuer-kind: ClusterIssuer
-#    cert-manager.io/issuer-name: letsencrypt
 
 process_resource_directory resources/50_general
 echo "=== You may need to copy vault data files if the PVC has changed for vault after deployment ==="
