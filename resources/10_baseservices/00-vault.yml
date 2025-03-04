@@ -1,4 +1,35 @@
 ---
+kind: PersistentVolume
+metadata:
+  name: vault-data-pv
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 500Gi
+  claimRef:
+    name: vault-data-pvc
+    namespace: vault
+  nfs:
+    path: /mnt/pool0/k8s/vault
+    server: vmnas01.wimsey.us
+  persistentVolumeReclaimPolicy: Retain
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vault-data-pvc
+  namespace: vault
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 500Gi
+  volumeMode: Filesystem
+  volumeName: vault-data-pv
+---
 # Source: vault/templates/server-serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -168,6 +199,11 @@ spec:
 
         - name: home
           emptyDir: {}
+
+        - name: vault-data
+          persistentVolumeClaim:
+            claimName: vault-data-pvc
+
       containers:
         - name: vault
 
@@ -242,7 +278,7 @@ spec:
 
 
           volumeMounts:
-            - name: data
+            - name: vault-data
               mountPath: /vault/data
 
             - name: gsuite-config
@@ -289,16 +325,6 @@ spec:
                 ]
 
 
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 10Gi
 #---
 ## Source: vault/templates/tests/server-test.yaml
 #apiVersion: v1
