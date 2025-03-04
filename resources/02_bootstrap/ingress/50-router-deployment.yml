@@ -18,6 +18,8 @@ spec:
       labels:
         k8s-app: ingress-router
     spec:
+      nodeSelector:
+        node.kubernetes.io/microk8s-controlplane: microk8s-controlplane
       serviceAccountName: ingress-router
       containers:
         - env:
