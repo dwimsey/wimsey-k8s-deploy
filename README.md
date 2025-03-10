@@ -70,6 +70,12 @@ Once the ExtendedResourcesTolerations admission controller is configured.  You c
 kubectl taint node -l nvidia.com/gpu.present nvidia.com/gpu:NoSchedule
 ```
 
+Pods that want to run on GPU only nodes should use this node selector and toleration:
+```yaml
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+```
+
 GPU Replicas
 =============
 
