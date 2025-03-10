@@ -208,8 +208,8 @@ Remote kubectl
 If you wish to access this system using the oc or kubectl commands remotely, you can export this kubeconfig file using
 the following command:
 
-ssh $INSTALL_USER@pi-01.wimsey.us microk8s config > ~/.kube/config
-kubectl config set-cluster microk8s-cluster --server=https:///k8s-api.wimsey.us
+ssh $INSTALL_USER@k8s-cp-00.wimsey.us microk8s config > ~/.kube/config
+kubectl config set-cluster microk8s-cluster --server=https://k8s-api.wimsey.us
 
 
 You may now run commands such as:
