@@ -131,7 +131,7 @@ microk8s disable ingress
 microk8s disable hostpath-storage
 
 # Install cert-manager operator for OpenShift routes
-helm install openshift-routes -n cert-manager oci://ghcr.io/cert-manager/charts/openshift-routes
+microk8s helm install openshift-routes -n cert-manager oci://ghcr.io/cert-manager/charts/openshift-routes
 # Use the following annotations on routes to automagically secure them with cert-manager
 #  annotations:
 #    cert-manager.io/issuer-kind: ClusterIssuer
@@ -161,7 +161,7 @@ wait_for_pod vault k8s-app=vault 600
 echo Configuring vault authentication and kubernetes integration by logging into vault and running:
 echo scripts/config-vault.sh
 
-echo Adding admin rolebinding (dwimsey-admin) for david@wimsey.us as cluster-admin role
+echo "Adding admin rolebinding (dwimsey-admin) for david@wimsey.us as cluster-admin role"
 microk8s kubectl create clusterrolebinding dwimsey-admin --clusterrole=cluster-admin --user=david@wimsey.us
 
 # Notify the user we're done and provide some basic instructions
