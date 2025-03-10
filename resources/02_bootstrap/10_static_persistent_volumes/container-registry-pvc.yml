@@ -9,7 +9,7 @@ spec:
   capacity:
     storage: 500Gi
   claimRef:
-    name: registry-claim-pvc
+    name: registry-claim
     namespace: container-registry
   nfs:
     path: /mnt/pool0/k8s/container-registry
@@ -20,7 +20,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: registry-claim-pvc
+  name: registry-claim
   namespace: container-registry
 spec:
   accessModes:
