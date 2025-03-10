@@ -18,6 +18,13 @@ ssh -t ${TARGET_HOST} sudo ${DWSETUP_GIT_DIR}/host-setup/${BASE_OS}.sh
 echo ''
 echo ''
 echo ==============================================================================
-echo To continue, ssh $TARGET_HOST
-echo ./wimsey-k8s-deploy/setup-microk8s.sh
+echo "To continue - for the intial microk8s node run the following, ssh $TARGET_HOST"
+echo ./wimsey-k8s-deploy/setup-microk8s-main.sh
+echo ''
+echo 'If you have already completed the initial deploy and are deploying workers or control plane nodes'
+echo Use
+echo './wimsey-k8s-/deploy/setup-microk8s-worker <hostname>'
+echo or
+echo './wimsey-k8s-/deploy/setup-microk8s-controlplane <hostname>'
+echo Respectively
 echo ''
