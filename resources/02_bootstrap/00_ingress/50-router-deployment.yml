@@ -38,7 +38,7 @@ spec:
             - name: ROUTER_SUBDOMAIN
               value: ${name}-${namespace}.apps.shackspacehosting.com
             - name: ROUTER_ALLOWED_DOMAINS
-              value: wimsey.us,apps.shackspacehosting.com,www.shackspacehosting.com
+              value: wimsey.us,wimsey.ai,apps.shackspacehosting.com,www.shackspacehosting.com
           image: openshift/origin-haproxy-router:v4.0.0
           livenessProbe:
             httpGet:
