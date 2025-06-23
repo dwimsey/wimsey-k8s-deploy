@@ -62,9 +62,9 @@ The nVidia operator will detect which nodes have GPUs and label them appropriate
 Extended Resource `nvidia.com/gpu`, which can be used in a pod template for resource.request.  By requesting this resource,
 the pod will be scheduled on a node which has a GPU resource.
 
-If using the nVidia GPU operator, adding the `ExtendedResourcesTolerations` admission controller is recommended, this will cut down on the effort required to assign pods the correct tolerations for GPU.  If the request a GPU resource via resources.request.nvidia.com/gpu , the appropiate taint tolerations will be added to the pod so that it will be allowed to use a GPU capable node
+If using the nVidia GPU operator, adding the `ExtendedResourceToleration` admission controller is recommended, this will cut down on the effort required to assign pods the correct tolerations for GPU.  If the request a GPU resource via resources.request.nvidia.com/gpu , the appropiate taint tolerations will be added to the pod so that it will be allowed to use a GPU capable node
 
-Once the ExtendedResourcesTolerations admission controller is configured.  You can `taint` the GPU nodes with this command, and the admission controller will add the appropriate toleration to pods which request use of `nvidia.com/gpu` resources.
+Once the ExtendedResourceToleration admission controller is configured.  You can `taint` the GPU nodes with this command, and the admission controller will add the appropriate toleration to pods which request use of `nvidia.com/gpu` resources.
 
 ```shell
 kubectl taint node -l nvidia.com/gpu.present nvidia.com/gpu:NoSchedule
