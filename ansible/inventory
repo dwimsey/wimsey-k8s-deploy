@@ -8,11 +8,17 @@ common_worker_nodes:
     k8s-app-01:
     k8s-app-02:
 
-gpu_worker_nodes:
+gpu_workers:
   hosts:
     k8s-gpu-app-01:
     k8s-gpu-app-02:
     k8s-gpu-app-03:
+
+gpu_workers_remote:
+  hosts:
+    k8s-gpu-01-home:
+    k8s-gpu-02-home:
+    k8s-gpu-03-home:
 
 workers:
   children:
