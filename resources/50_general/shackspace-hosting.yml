@@ -52,7 +52,7 @@ spec:
           terminationMessagePolicy: File
           imagePullPolicy: IfNotPresent
       restartPolicy: Always
-      terminationGracePeriodSeconds: 30
+      terminationGracePeriodSeconds: 5
       dnsPolicy: ClusterFirst
       nodeSelector:
         kubernetes.io/arch: amd64
